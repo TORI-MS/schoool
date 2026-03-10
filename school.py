@@ -17,6 +17,11 @@ st.markdown("""
     .stSelectbox label { color: #1a1a2e !important; font-weight: 600; }
     h2, h3, h4 { color: #1a1a2e !important; }
     div[data-testid="stExpander"] { background: #fff; border-radius: 10px; margin-bottom: 6px; }
+
+    /* 마크다운 HTML 컨테이너 높이 제한 해제 */
+    div[data-testid="stMarkdownContainer"] { overflow: visible !important; height: auto !important; }
+    div[data-testid="stMarkdownContainer"] > div { overflow: visible !important; height: auto !important; }
+    .element-container { overflow: visible !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -211,28 +216,67 @@ def render_day_card(day: str, subjects: list, rooms: list, highlight: bool = Fal
         f'{star}{day}</div>{rows_html}</div>'
     )
 
+def show_day(day: str, highlight: bool = False):
+    """시간표 카드를 네이티브 Streamlit 컴포넌트로 렌더링"""
+    subs  = student_tt.get(day, [])
+    rooms = student_tt.get("교실", {}).get(day, []) if has_classroom else []
+
+    if highlight:
+        st.markdown(
+            f'<div style="background:#eef2ff; border:3px solid #0f3460; border-radius:12px; '
+            f'padding:12px 16px; margin-bottom:4px;">' 
+            f'<span style="font-weight:700; color:#0f3460; font-size:1rem;">⭐ {day}</span></div>',
+            unsafe_allow_html=True
+        )
+    else:
+        st.markdown(
+            f'<div style="background:#fff; border:1px solid #e0e0e0; border-radius:12px; '
+            f'padding:12px 16px; margin-bottom:4px;">' 
+            f'<span style="font-weight:700; color:#0f3460; font-size:1rem;">{day}</span></div>',
+            unsafe_allow_html=True
+        )
+
+    bg = "#eef2ff" if highlight else "#fff"
+    border_style = "3px solid #0f3460" if highlight else "1px solid #e0e0e0"
+
+    for i, subj in enumerate(subs):
+        if not subj:
+            continue
+        room = rooms[i] if i < len(rooms) else ""
+        c = subject_colors.get(subj, "#74b9ff")
+        room_tag = f'📍{room}' if room else ""
+        st.markdown(
+            f'<div style="display:flex; align-items:center; padding:4px 16px; '
+            f'background:{bg}; border-left:{border_style}; border-right:{border_style};">' 
+            f'<span style="min-width:44px; font-size:.8rem; color:#868e96; font-weight:600;">{i+1}교시</span>' 
+            f'<span style="background:{c}22; color:{c}; border:1.5px solid {c}; '
+            f'border-radius:16px; padding:3px 12px; font-weight:700; font-size:.9rem;">{subj}</span>' 
+            f'<span style="font-size:.75rem; color:#888; margin-left:8px;">{room_tag}</span></div>',
+            unsafe_allow_html=True
+        )
+
+    # 카드 하단 마감선
+    st.markdown(
+        f'<div style="background:{bg}; border:1px solid {"#0f3460" if highlight else "#e0e0e0"}; '
+        f'border-top:none; border-radius:0 0 12px 12px; height:10px; margin-bottom:10px;"></div>',
+        unsafe_allow_html=True
+    )
+
+
 if weekday_num >= 5:
     st.info("주말이라 시간표가 없어요! 🎉")
     for day in ["월요일","화요일","수요일","목요일","금요일"]:
-        subs  = student_tt.get(day, [])
-        rooms = student_tt.get("교실", {}).get(day, []) if has_classroom else []
         with st.expander(f"📋 {day}"):
-            st.markdown(render_day_card(day, subs, rooms), unsafe_allow_html=True)
+            show_day(day)
 else:
     today_day  = weekday_names[weekday_num]
     other_days = [d for d in ["월요일","화요일","수요일","목요일","금요일"] if d != today_day]
 
-    # 오늘(또는 내일) 시간표 — 강조 카드
-    subs  = student_tt.get(today_day, [])
-    rooms = student_tt.get("교실", {}).get(today_day, []) if has_classroom else []
-    st.markdown(render_day_card(today_day, subs, rooms, highlight=True), unsafe_allow_html=True)
+    show_day(today_day, highlight=True)
 
-    # 나머지 요일 — expander
     for day in other_days:
-        subs  = student_tt.get(day, [])
-        rooms = student_tt.get("교실", {}).get(day, []) if has_classroom else []
         with st.expander(f"📋 {day}"):
-            st.markdown(render_day_card(day, subs, rooms), unsafe_allow_html=True)
+            show_day(day)
 
 # ── 푸터 ─────────────────────────────────────────────────────
 st.markdown("---")
