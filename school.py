@@ -190,31 +190,26 @@ def render_day_card(day: str, subjects: list, rooms: list, highlight: bool = Fal
     bg     = "#eef2ff" if highlight else "#fff"
     border = "3px solid #0f3460" if highlight else "1px solid #e0e0e0"
     star   = "⭐ " if highlight else ""
-    max_period = len([s for s in subjects if s])  # 빈 칸 제외
 
     rows_html = ""
     for i, subj in enumerate(subjects):
         if not subj:
             continue
         room = rooms[i] if i < len(rooms) else ""
-        rows_html += f"""
-        <tr>
-            <td style="width:44px; text-align:center; font-size:.78rem;
-                       color:#868e96; font-weight:600; padding:5px 4px;">{i+1}교시</td>
-            <td style="padding:5px 8px;">{subject_badge(subj, room)}</td>
-        </tr>"""
+        badge = subject_badge(subj, room)
+        period_label = f"{i+1}교시"
+        rows_html += (
+            f'<div style="display:flex; align-items:center; margin-bottom:6px;">' 
+            f'<span style="min-width:40px; font-size:.78rem; color:#868e96; font-weight:600;">' 
+            f'{period_label}</span>{badge}</div>'
+        )
 
-    return f"""
-<div style="background:{bg}; border:{border}; border-radius:12px;
-            padding:14px 16px; margin-bottom:8px;
-            box-shadow:0 2px 8px rgba(0,0,0,0.05);">
-    <div style="font-weight:700; color:#0f3460; margin-bottom:8px; font-size:.97rem;">
-        {star}{day}
-    </div>
-    <table style="width:100%; border-collapse:collapse;">
-        {rows_html}
-    </table>
-</div>"""
+    return (
+        f'<div style="background:{bg}; border:{border}; border-radius:12px; '
+        f'padding:14px 16px; margin-bottom:8px; box-shadow:0 2px 8px rgba(0,0,0,0.05);">' 
+        f'<div style="font-weight:700; color:#0f3460; margin-bottom:8px; font-size:.97rem;">' 
+        f'{star}{day}</div>{rows_html}</div>'
+    )
 
 if weekday_num >= 5:
     st.info("주말이라 시간표가 없어요! 🎉")
