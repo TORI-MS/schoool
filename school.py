@@ -6,7 +6,7 @@ import json
 from datetime import datetime, timedelta
 from pathlib import Path
 
-st.set_page_config(page_title="🏫 우리 학교 오늘", page_icon="🏫", layout="centered")
+st.set_page_config(page_title="🏫 3-11 전용", page_icon="🏫", layout="centered")
 
 st.markdown("""
 <style>
@@ -111,36 +111,45 @@ subject_colors = {
 # ══════════════════════════════════════════════════════════════
 #  1. 실시간 시계
 # ══════════════════════════════════════════════════════════════
-components.html("""
+# ══════════════════════════════════════════════════════════════
+#  1. 헤더
+# ══════════════════════════════════════════════════════════════
+st.markdown(f"""
 <div style="
     background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
-    border-radius: 16px; padding: 24px 30px; color: #fff;
-    font-family: sans-serif;
+    border-radius: 16px; padding: 20px 30px; color: #fff;
+    font-family: sans-serif; margin-bottom: 0;
 ">
-    <h1 style="margin:0 0 4px; font-size:1.8rem; color:#fff;">🏫 우리 학교 오늘</h1>
-    <div style="display:flex; align-items:center; gap:16px; margin-top:8px;">
-        <span id="clock" style="font-size:2rem; font-weight:800; letter-spacing:3px; color:#fff;">00:00:00</span>
-        <span id="badge" style="
-            background:#fd7272; color:#fff; border-radius:20px;
-            padding:3px 14px; font-size:.9rem; display:none;
-        ">내일 급식</span>
+    <h1 style="margin:0; font-size:1.8rem; color:#fff;">🏫 3학년 11반 전용 사이트</h1>
+    <p style="margin:6px 0 0; font-size:1rem; color:#cdd6f4;">
+        📅 {target_disp} &nbsp;|&nbsp; {weekday_kr}
+    </p>
+</div>
+""", unsafe_allow_html=True)
+
+# 실시간 시계 (헤더 아래)
+components.html("""
+<div style="font-family:sans-serif; padding:10px 4px 0;">
+    <div style="display:flex; align-items:center; gap:14px;">
+        <span id="clock" style="font-size:2rem; font-weight:800; letter-spacing:3px; color:#1a1a2e;">00:00:00</span>
+        <span id="badge" style="background:#fd7272; color:#fff; border-radius:20px;
+            padding:3px 14px; font-size:.88rem; font-weight:600; display:none;">내일 급식</span>
     </div>
 </div>
 <script>
-function pad(n) { return String(n).padStart(2,'0'); }
+function pad(n) { return String(n).padStart(2,"0"); }
 function tick() {
-    var d   = new Date();
-    var h   = d.getHours(), m = d.getMinutes(), s = d.getSeconds();
+    var d = new Date();
+    var h = d.getHours(), m = d.getMinutes(), s = d.getSeconds();
     var tot = h * 60 + m;
-    document.getElementById('clock').textContent = pad(h)+':'+pad(m)+':'+pad(s);
-    // 13:20 이후 ~ 23:59 → 배지 표시 / 자정~11:59 → 숨김
+    document.getElementById("clock").textContent = pad(h)+":"+pad(m)+":"+pad(s);
     var show = (h >= 12) && (tot >= 13*60+20);
-    document.getElementById('badge').style.display = show ? 'inline-block' : 'none';
+    document.getElementById("badge").style.display = show ? "inline-block" : "none";
 }
 tick();
 setInterval(tick, 1000);
 </script>
-""", height=120)
+""", height=55)
 
 st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
