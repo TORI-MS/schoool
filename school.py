@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import requests
 import re
 import json
@@ -20,6 +21,8 @@ st.markdown("""
     div[data-testid="stMarkdownContainer"] { overflow: visible !important; height: auto !important; }
     div[data-testid="stMarkdownContainer"] > div { overflow: visible !important; height: auto !important; }
     .element-container { overflow: visible !important; }
+    /* components iframe 여백 제거 */
+    iframe { display: block; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -28,10 +31,18 @@ API_KEY            = "ee1619138aef47d7a9a8200b7dbe52b5"
 ATPT_OFCDC_SC_CODE = "E10"
 SD_SCHUL_CODE      = "7310405"
 
-# ── 날짜 계산: 오후 1시 이후면 내일 기준 ────────────────────
-now       = datetime.now()
-show_next = now.hour >= 13
-target_dt = now + timedelta(days=1) if show_next else now
+# ── 날짜 계산 ────────────────────────────────────────────────
+now = datetime.now()
+
+def calc_target(dt: datetime):
+    mins = dt.hour * 60 + dt.minute
+    if dt.hour < 12:                   # 자정~정오: 항상 오늘
+        return dt, False
+    if mins >= 13 * 60 + 20:          # 13:20 이후: 내일
+        return dt + timedelta(days=1), True
+    return dt, False                   # 12:00~13:19: 오늘
+
+target_dt, is_tomorrow = calc_target(now)
 
 target_str  = target_dt.strftime("%Y%m%d")
 target_disp = target_dt.strftime("%Y년 %m월 %d일")
@@ -39,9 +50,7 @@ weekday_num = target_dt.weekday()
 weekday_names = ["월요일","화요일","수요일","목요일","금요일","토요일","일요일"]
 weekday_kr  = weekday_names[weekday_num]
 
-is_tomorrow = target_dt.date() != now.date()
-
-# ── 시간표 JSON 로드 (3학년 11반 고정) ───────────────────────
+# ── 시간표 JSON 로드 ─────────────────────────────────────────
 @st.cache_data
 def load_timetable():
     p = Path(__file__).parent / "timetable.json"
@@ -100,28 +109,50 @@ subject_colors = {
 }
 
 # ══════════════════════════════════════════════════════════════
-#  헤더
+#  1. 실시간 시계
 # ══════════════════════════════════════════════════════════════
-tomorrow_badge = (
-    ' <span style="background:#fd7272; color:#fff; border-radius:20px; '
-    'padding:2px 12px; font-size:.9rem;">내일 미리보기</span>'
-    if is_tomorrow else ""
-)
-
-st.markdown(f"""
+components.html("""
 <div style="
     background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
-    border-radius: 16px; padding: 24px 30px; margin-bottom: 20px; color: #fff;
+    border-radius: 16px; padding: 24px 30px; color: #fff;
+    font-family: sans-serif;
 ">
-    <h1 style="margin:0; font-size:2rem; color:#fff;">🏫 우리 학교 오늘</h1>
-    <p style="margin:6px 0 0; font-size:1.2rem; color:#cdd6f4;">
-        📅 {target_disp} &nbsp;|&nbsp; {weekday_kr}{tomorrow_badge}
-    </p>
+    <h1 style="margin:0 0 4px; font-size:1.8rem; color:#fff;">🏫 우리 학교 오늘</h1>
+    <div style="display:flex; align-items:center; gap:16px; margin-top:8px;">
+        <span id="clock" style="font-size:2rem; font-weight:800; letter-spacing:3px; color:#fff;">00:00:00</span>
+        <span id="badge" style="
+            background:#fd7272; color:#fff; border-radius:20px;
+            padding:3px 14px; font-size:.9rem; display:none;
+        ">내일 급식</span>
+    </div>
 </div>
-""", unsafe_allow_html=True)
+<script>
+function pad(n) { return String(n).padStart(2,'0'); }
+function tick() {
+    var d   = new Date();
+    var h   = d.getHours(), m = d.getMinutes(), s = d.getSeconds();
+    var tot = h * 60 + m;
+    document.getElementById('clock').textContent = pad(h)+':'+pad(m)+':'+pad(s);
+    // 13:20 이후 ~ 23:59 → 배지 표시 / 자정~11:59 → 숨김
+    var show = (h >= 12) && (tot >= 13*60+20);
+    document.getElementById('badge').style.display = show ? 'inline-block' : 'none';
+}
+tick();
+setInterval(tick, 1000);
+</script>
+""", height=120)
+
+st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+
+# ── 날짜 / 요일 표시 ─────────────────────────────────────────
+st.markdown(
+    f'<p style="color:#555; font-size:1rem; margin:0 0 20px; padding-left:4px;">'
+    f'📅 {target_disp} &nbsp;|&nbsp; {weekday_kr}</p>',
+    unsafe_allow_html=True
+)
 
 # ══════════════════════════════════════════════════════════════
-#  섹션 1 — 급식
+#  2. 급식
 # ══════════════════════════════════════════════════════════════
 st.markdown('<h2 style="color:#1a1a2e; margin-bottom:8px;">🍱 급식</h2>', unsafe_allow_html=True)
 
@@ -161,7 +192,7 @@ else:
 st.markdown("<br>", unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════════════════
-#  섹션 2 — 시간표 (3학년 11반, 번호 선택)
+#  3. 시간표
 # ══════════════════════════════════════════════════════════════
 st.markdown(
     '<h2 style="color:#1a1a2e; margin-bottom:4px;">📚 시간표</h2>'
@@ -173,17 +204,15 @@ student_num = st.selectbox(
     "👤 번호 선택",
     options=list(range(1, 31)),
     format_func=lambda x: f"{x}번",
-    index=20,  # 기본값 21번
+    index=20,
 )
 
-student_tt  = timetable_data.get(str(student_num), {})
-has_room    = "교실" in student_tt
+student_tt = timetable_data.get(str(student_num), {})
+has_room   = "교실" in student_tt
 
-# ── 시간표 렌더링 ─────────────────────────────────────────────
 def show_day(day: str, highlight: bool = False):
     subs  = student_tt.get(day, [])
     rooms = student_tt.get("교실", {}).get(day, []) if has_room else []
-
     if not subs:
         return
 
@@ -192,21 +221,21 @@ def show_day(day: str, highlight: bool = False):
     border_thick = "3px"    if highlight else "1px"
     star         = "⭐ "    if highlight else ""
 
-    # 헤더
     st.markdown(
         f'<div style="background:{bg}; border:{border_thick} solid {border_color}; '
         f'border-radius:12px 12px 0 0; padding:10px 16px;">'
         f'<span style="font-weight:700; color:#0f3460; font-size:.97rem;">{star}{day}</span></div>',
         unsafe_allow_html=True
     )
-
-    # 교시별 행
     for i, subj in enumerate(subs):
         if not subj:
             continue
         room = rooms[i] if i < len(rooms) else ""
         c    = subject_colors.get(subj, "#74b9ff")
-        room_tag = f'<span style="font-size:.73rem; color:#999; margin-left:8px;">📍{room}</span>' if room else ""
+        room_tag = (
+            f'<span style="font-size:.73rem; color:#999; margin-left:8px;">📍{room}</span>'
+            if room else ""
+        )
         st.markdown(
             f'<div style="display:flex; align-items:center; padding:6px 16px; '
             f'background:{bg}; '
@@ -219,24 +248,18 @@ def show_day(day: str, highlight: bool = False):
             f'{room_tag}</div>',
             unsafe_allow_html=True
         )
-
-    # 하단 마감
     st.markdown(
         f'<div style="background:{bg}; border:{border_thick} solid {border_color}; '
         f'border-top:none; border-radius:0 0 12px 12px; height:10px; margin-bottom:10px;"></div>',
         unsafe_allow_html=True
     )
 
-# 오늘(또는 내일) 강조 카드
 if weekday_num >= 5:
     st.info("주말이라 시간표가 없어요! 🎉")
 else:
     today_day  = weekday_names[weekday_num]
     other_days = [d for d in ["월요일","화요일","수요일","목요일","금요일"] if d != today_day]
-
     show_day(today_day, highlight=True)
-
-    # 나머지 요일 expander
     for day in other_days:
         with st.expander(f"📋 {day}"):
             show_day(day)
