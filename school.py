@@ -21,7 +21,6 @@ st.markdown("""
     div[data-testid="stMarkdownContainer"] { overflow: visible !important; height: auto !important; }
     div[data-testid="stMarkdownContainer"] > div { overflow: visible !important; height: auto !important; }
     .element-container { overflow: visible !important; }
-    /* components iframe 여백 제거 */
     iframe { display: block; }
 </style>
 """, unsafe_allow_html=True)
@@ -36,14 +35,13 @@ now = datetime.now()
 
 def calc_target(dt: datetime):
     mins = dt.hour * 60 + dt.minute
-    if dt.hour < 12:                   # 자정~정오: 항상 오늘
+    if dt.hour < 12:          # 자정~정오: 오늘
         return dt, False
-    if mins >= 13 * 60 + 20:          # 13:20 이후: 내일
+    if mins >= 13 * 60 + 20:  # 13:20 이후: 내일
         return dt + timedelta(days=1), True
-    return dt, False                   # 12:00~13:19: 오늘
+    return dt, False           # 12:00~13:19: 오늘
 
 target_dt, is_tomorrow = calc_target(now)
-
 target_str  = target_dt.strftime("%Y%m%d")
 target_disp = target_dt.strftime("%Y년 %m월 %d일")
 weekday_num = target_dt.weekday()
@@ -97,20 +95,44 @@ def parse_menu(raw: str) -> list:
 
 # ── 과목 색상 ─────────────────────────────────────────────────
 subject_colors = {
-    "화작": "#e17055", "영독": "#0984e3", "스포츠": "#fd79a8",
-    "지식재산일반": "#6c5ce7", "윤리와사상": "#f9a825", "미술창작": "#a29bfe",
-    "사물인터넷": "#00b894", "진로": "#636e72", "음악3": "#e67e22",
-    "미적분": "#d63031", "확통": "#e84393", "물리학Ⅱ": "#6c5ce7",
-    "심리학": "#00cec9", "국어": "#e17055", "수학": "#00b894",
-    "영어": "#0984e3", "과학": "#6c5ce7", "사회": "#e0a800",
-    "체육": "#fd79a8", "음악": "#e67e22", "미술": "#a29bfe",
-    "도덕": "#00cec9", "자율": "#636e72", "동아리": "#74b9ff",
-    "청소": "#fab1a0",
+    # 3-11반 실제 과목
+    "화작":         "#e17055",
+    "영독":         "#0984e3",
+    "스포츠":       "#fd79a8",
+    "지식재산일반": "#6c5ce7",
+    "윤리와사상":   "#f9a825",
+    "미술창작":     "#a29bfe",
+    "사물인터넷":   "#00b894",
+    "진로":         "#636e72",
+    "음악3":        "#e67e22",
+    "미적분":       "#d63031",
+    "확통":         "#e84393",
+    "물리학Ⅱ":     "#5f27cd",
+    "심리학":       "#00cec9",
+    "언어와매체":   "#0652DD",
+    "정치와법":     "#C4380D",
+    "여행지리":     "#1289A7",
+    "음악감상과비평": "#EE5A24",
+    "생명과학Ⅱ":   "#009432",
+    "지구과학Ⅱ":   "#006266",
+    "세계사":       "#9980FA",
+    "철학":         "#B53471",
+    "논술":         "#5758BB",
+    # 공통 과목
+    "국어":   "#e17055",
+    "수학":   "#00b894",
+    "영어":   "#0984e3",
+    "과학":   "#6c5ce7",
+    "사회":   "#e0a800",
+    "체육":   "#fd79a8",
+    "음악":   "#e67e22",
+    "미술":   "#a29bfe",
+    "도덕":   "#00cec9",
+    "자율":   "#636e72",
+    "동아리": "#74b9ff",
+    "청소":   "#fab1a0",
 }
 
-# ══════════════════════════════════════════════════════════════
-#  1. 실시간 시계
-# ══════════════════════════════════════════════════════════════
 # ══════════════════════════════════════════════════════════════
 #  1. 헤더
 # ══════════════════════════════════════════════════════════════
@@ -127,13 +149,15 @@ st.markdown(f"""
 </div>
 """, unsafe_allow_html=True)
 
-# 실시간 시계 (헤더 아래)
+# ── 실시간 시계 (헤더 바로 아래) ─────────────────────────────
 components.html("""
 <div style="font-family:sans-serif; padding:10px 4px 0;">
     <div style="display:flex; align-items:center; gap:14px;">
-        <span id="clock" style="font-size:2rem; font-weight:800; letter-spacing:3px; color:#1a1a2e;">00:00:00</span>
-        <span id="badge" style="background:#fd7272; color:#fff; border-radius:20px;
-            padding:3px 14px; font-size:.88rem; font-weight:600; display:none;">내일 급식</span>
+        <span id="clock" style="font-size:2rem; font-weight:800;
+              letter-spacing:3px; color:#1a1a2e;">00:00:00</span>
+        <span id="badge" style="background:#fd7272; color:#fff;
+              border-radius:20px; padding:3px 14px;
+              font-size:.88rem; font-weight:600; display:none;">내일 급식</span>
     </div>
 </div>
 <script>
@@ -151,14 +175,7 @@ setInterval(tick, 1000);
 </script>
 """, height=55)
 
-st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-
-# ── 날짜 / 요일 표시 ─────────────────────────────────────────
-st.markdown(
-    f'<p style="color:#555; font-size:1rem; margin:0 0 20px; padding-left:4px;">'
-    f'📅 {target_disp} &nbsp;|&nbsp; {weekday_kr}</p>',
-    unsafe_allow_html=True
-)
+st.markdown("<br>", unsafe_allow_html=True)
 
 # ══════════════════════════════════════════════════════════════
 #  2. 급식
@@ -178,7 +195,6 @@ else:
             meal_type = row.get("MMEAL_SC_NM", "급식")
             menu_list = parse_menu(row.get("DDISH_NM", ""))
             kcal      = row.get("CAL_INFO", "")
-
             menu_html = "".join(
                 f'<div style="padding:3px 0; font-size:.97rem; color:#2d3436;">• {m}</div>'
                 for m in menu_list
@@ -213,7 +229,7 @@ student_num = st.selectbox(
     "👤 번호 선택",
     options=list(range(1, 31)),
     format_func=lambda x: f"{x}번",
-    index=20,
+    index=20,   # 기본값 21번
 )
 
 student_tt = timetable_data.get(str(student_num), {})
